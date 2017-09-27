@@ -30,7 +30,7 @@ def initial(dbname):
     Return connection and cursor
     """
     
-    conn = sq.connect(dbname+'.sqlite')
+    conn = sq.connect(dbname+'.db')
     cur = conn.cursor()
     
     return conn,cur
