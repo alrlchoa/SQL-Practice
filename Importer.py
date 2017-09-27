@@ -5,19 +5,15 @@ Created on Fri Oct 14 15:15:45 2016
 @author: Arnold Choa
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.integrate import odeint
-import matplotlib.animation as animation
-import math
-import time
-import itertools as iter
 import sqlite3 as sq
 import csv
 import os
 
 def representsInt(s):
+    """ Check if string is possibly an integer
+    s is a string
+    Return True if possibly to be integer; False otherwise
+    """
     try: 
         int(s)
         return True
@@ -26,8 +22,13 @@ def representsInt(s):
     
     
 def initial(dbname):
-    # Establish Connection to SQL database
-    # dbname is the filepath of the database
+    """Establish Connection to SQL database
+    If it does not yet exist, create database
+    
+    dbname is the filepath of the database
+    
+    Return connection and cursor
+    """
     
     conn = sq.connect(dbname+'.sqlite')
     cur = conn.cursor()
@@ -35,9 +36,11 @@ def initial(dbname):
     return conn,cur
 
 def close(conn):
-    # Close Connection to SQL database
-    # conn is the connection of the database
-    # If Y, save changes. If N, do not save changes. If C, cancel closing
+    """Close Connection to SQL database
+    conn is the connection of the database
+    If Y, save changes. If N, do not save changes. If C, cancel closing.
+    Otherwise, loop.
+    """
     
     choice = 0
     
@@ -56,11 +59,28 @@ def close(conn):
             conn.close()
             return
 
+def createTable(cur, name, colname, coltype):
+    """Creates a table inside a database. first column must be primary key
+    cur  - cursor
+    name - table name
+    nf   - column name
+    ft   - column 1 field type
+    """
+    
+    try:
+        cur.execute('CREATE TABLE {tn} ({nf} {ft} PRIMARY KEY)'\
+                    .format(tn = name, nf = colname, ft =coltype))
+    except sq.OperationalError:
+        raise Exception('Table already exists. Cannot import')
+    
+    return
+
 def importer(cv, conn, cur):
-    # Import csv into database as a new table
-    # cv is the filepath of the cv
-    # conn is the conenction to the database
-    # cur is the cursor
+    """ Import csv into database as a new table
+    cv is the filepath of the cv
+    conn is the conenction to the database
+    cur is the cursor
+    """
     
     name = os.path.splitext(cv)[0]
     
@@ -86,10 +106,9 @@ def importer(cv, conn, cur):
         typing = ['INTEGER' if representsInt(x) else 'TEXT' for x in rest[0]]
         
         try:
-            cur.execute('CREATE TABLE {tn} ({nf} {ft} PRIMARY KEY)'\
-                        .format(tn = name, nf = i[0], ft =typing[0]))
-        except sq.OperationalError:
-            print('Table already exists. Cannot import')
+            createTable(cur,name, i[0], typing[0])
+        except Exception as error:
+            print(error)
             return
         
         i = i[1:]
